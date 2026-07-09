@@ -83,17 +83,7 @@ TEAM="$(cf GET "/accounts/$ACCOUNT_ID/access/organizations" | jget "(d.get('resu
 [ -n "$TEAM" ] || die "no Zero Trust organization on this account. Create one first: one-time, free, at one.dash.cloudflare.com"
 say "zero trust team: $TEAM"
 
-# 5. R2 bucket
-BUCKET_EXISTS="$(cf GET "/accounts/$ACCOUNT_ID/r2/buckets" | jget "any(b.get('name')=='$BUCKET' for b in (d.get('result') or {}).get('buckets', []))")"
-if [ "$BUCKET_EXISTS" = "True" ]; then
-  say "bucket: $BUCKET (already exists)"
-else
-  cf POST "/accounts/$ACCOUNT_ID/r2/buckets" "{\"name\":\"$BUCKET\"}" | jget "d['success']" | grep -q True \
-    || die "bucket creation failed"
-  say "bucket: $BUCKET (created)"
-fi
-
-# 6. DNS: proxied placeholder records so the worker routes have hostnames
+# 5. DNS: proxied placeholder records so the worker routes have hostnames
 dns_ensure() {
   local host="$1"
   local existing
@@ -110,7 +100,7 @@ dns_ensure() {
 dns_ensure "$PUBLISH_HOST"
 dns_ensure "$STATIC_HOST"
 
-# 7. Access applications
+# 6. Access applications
 emails_json() {
   python3 -c "import json,sys
 print(json.dumps([{'email': {'email': e.strip()}} for e in sys.argv[1].split(',') if e.strip()]))" "$EMAILS"
@@ -161,6 +151,22 @@ say "access app: viewer ($STATIC_HOST)"
 VIEW_APP="$(access_app "shhtml viewer" "$STATIC_HOST")"
 VIEW_ID="$(printf '%s' "$VIEW_APP" | sed -n 1p)"
 policy_ensure "$VIEW_ID" "shhtml viewers"
+
+# 7. R2 bucket. Last on purpose: R2 must be enabled once in the dashboard,
+# and everything above this line is independent of it, so a re-run after
+# enabling R2 completes the setup.
+R2_RESP="$(cf GET "/accounts/$ACCOUNT_ID/r2/buckets")"
+if printf '%s' "$R2_RESP" | grep -q '"code":10042'; then
+  die "R2 is not enabled on this account yet. One-time step: open dash.cloudflare.com, R2 in the sidebar, and click through the enable screen (free tier; Cloudflare may ask for a payment method it will not charge). Then re-run this script; everything already created will be reused."
+fi
+BUCKET_EXISTS="$(printf '%s' "$R2_RESP" | jget "any(b.get('name')=='$BUCKET' for b in (d.get('result') or {}).get('buckets', []))")"
+if [ "$BUCKET_EXISTS" = "True" ]; then
+  say "bucket: $BUCKET (already exists)"
+else
+  cf POST "/accounts/$ACCOUNT_ID/r2/buckets" "{\"name\":\"$BUCKET\"}" | jget "d['success']" | grep -q True \
+    || die "bucket creation failed"
+  say "bucket: $BUCKET (created)"
+fi
 
 # 8. wrangler.toml
 TOML="$WORKER_DIR/wrangler.toml"

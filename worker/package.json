@@ -1,0 +1,14 @@
+{
+  "name": "shhtml-worker",
+  "private": true,
+  "type": "module",
+  "description": "Cloudflare Worker for shhtml: token-gated writes to R2, static serving with index rewrite.",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}

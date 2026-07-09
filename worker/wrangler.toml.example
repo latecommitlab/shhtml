@@ -1,0 +1,31 @@
+# Copy to wrangler.toml and fill in your values. wrangler.toml is gitignored
+# on purpose: it holds instance facts (your account, your domain), and those
+# never belong in the repo.
+
+name = "shhtml"
+main = "src/index.js"
+compatibility_date = "2026-06-01"
+account_id = "YOUR_CLOUDFLARE_ACCOUNT_ID"
+workers_dev = false
+
+routes = [
+  { pattern = "publish.example.com/*", zone_name = "example.com" },
+  { pattern = "static.example.com/*",  zone_name = "example.com" },
+]
+
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "shhtml"
+
+[vars]
+PUBLISH_HOST = "publish.example.com"
+STATIC_HOST = "static.example.com"
+# Zero Trust team name: the subdomain of <team>.cloudflareaccess.com
+ACCESS_TEAM_DOMAIN = "your-team"
+# Audience tag of the Access application protecting publish.example.com/auth.
+# The setup skill prints this after creating the application.
+ACCESS_AUD = "PASTE_ACCESS_APP_AUD"
+TOKEN_TTL_DAYS = "30"
+
+# SIGNING_SECRET is a secret, not a var:
+#   openssl rand -hex 32 | npx wrangler secret put SIGNING_SECRET

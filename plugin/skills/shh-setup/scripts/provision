@@ -1,0 +1,188 @@
+#!/usr/bin/env bash
+# provision: one-time setup of a shhtml instance on a Cloudflare account.
+#
+# Creates: R2 bucket, DNS records for both hostnames, two Cloudflare Access
+# applications (publish auth + private-by-default viewing), and a filled-in
+# wrangler.toml. Deploy still happens via wrangler (see shh-setup skill).
+#
+# Usage:
+#   CLOUDFLARE_API_TOKEN=... provision \
+#     --zone example.com \
+#     --publish-host publish.example.com \
+#     --static-host static.example.com \
+#     --emails you@example.com,also-you@gmail.com \
+#     --worker-dir /path/to/shhtml/worker \
+#     [--bucket shhtml] [--account-id ...]
+#
+# Idempotent: safe to re-run; existing resources are reused.
+
+set -euo pipefail
+
+API="https://api.cloudflare.com/client/v4"
+
+die() { printf 'provision: %s\n' "$*" >&2; exit 1; }
+say() { printf '%s\n' "$*"; }
+
+[ -n "${CLOUDFLARE_API_TOKEN:-}" ] || die "CLOUDFLARE_API_TOKEN is not set"
+command -v curl >/dev/null || die "curl is required"
+command -v python3 >/dev/null || die "python3 is required"
+
+ZONE="" PUBLISH_HOST="" STATIC_HOST="" EMAILS="" BUCKET="shhtml" ACCOUNT_ID="" WORKER_DIR=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --zone)         shift; ZONE="$1" ;;
+    --publish-host) shift; PUBLISH_HOST="$1" ;;
+    --static-host)  shift; STATIC_HOST="$1" ;;
+    --emails)       shift; EMAILS="$1" ;;
+    --bucket)       shift; BUCKET="$1" ;;
+    --account-id)   shift; ACCOUNT_ID="$1" ;;
+    --worker-dir)   shift; WORKER_DIR="$1" ;;
+    *) die "unknown flag: $1" ;;
+  esac
+  shift
+done
+[ -n "$ZONE" ] && [ -n "$PUBLISH_HOST" ] && [ -n "$STATIC_HOST" ] && [ -n "$EMAILS" ] && [ -n "$WORKER_DIR" ] \
+  || die "missing required flags (see usage at the top of this script)"
+[ -f "$WORKER_DIR/src/index.js" ] || die "--worker-dir does not look like the shhtml worker: $WORKER_DIR"
+
+cf() { # cf <method> <path> [json-body]
+  local method="$1" path="$2" body="${3:-}"
+  if [ -n "$body" ]; then
+    curl -sS -X "$method" -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+      -H "Content-Type: application/json" --data "$body" "$API$path"
+  else
+    curl -sS -X "$method" -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "$API$path"
+  fi
+}
+
+jget() { # jget <python-expr reading d>
+  python3 -c "import json,sys
+d = json.load(sys.stdin)
+v = $1
+print(v if v is not None else '')"
+}
+
+# 1. token works?
+cf GET /user/tokens/verify | jget "d['success']" | grep -q True || die "API token failed verification"
+say "token: ok"
+
+# 2. zone id
+ZONE_ID="$(cf GET "/zones?name=$ZONE" | jget "(d['result'] or [{}])[0].get('id')")"
+[ -n "$ZONE_ID" ] || die "zone not found on this account: $ZONE"
+say "zone: $ZONE ($ZONE_ID)"
+
+# 3. account id (from the zone unless given)
+if [ -z "$ACCOUNT_ID" ]; then
+  ACCOUNT_ID="$(cf GET "/zones/$ZONE_ID" | jget "d['result']['account']['id']")"
+fi
+[ -n "$ACCOUNT_ID" ] || die "could not resolve account id"
+say "account: $ACCOUNT_ID"
+
+# 4. Zero Trust team (needed by the worker to validate Access JWTs)
+TEAM="$(cf GET "/accounts/$ACCOUNT_ID/access/organizations" | jget "(d.get('result') or {}).get('auth_domain','').split('.')[0]")"
+[ -n "$TEAM" ] || die "no Zero Trust organization on this account. Create one first: one-time, free, at one.dash.cloudflare.com"
+say "zero trust team: $TEAM"
+
+# 5. R2 bucket
+BUCKET_EXISTS="$(cf GET "/accounts/$ACCOUNT_ID/r2/buckets" | jget "any(b.get('name')=='$BUCKET' for b in (d.get('result') or {}).get('buckets', []))")"
+if [ "$BUCKET_EXISTS" = "True" ]; then
+  say "bucket: $BUCKET (already exists)"
+else
+  cf POST "/accounts/$ACCOUNT_ID/r2/buckets" "{\"name\":\"$BUCKET\"}" | jget "d['success']" | grep -q True \
+    || die "bucket creation failed"
+  say "bucket: $BUCKET (created)"
+fi
+
+# 6. DNS: proxied placeholder records so the worker routes have hostnames
+dns_ensure() {
+  local host="$1"
+  local existing
+  existing="$(cf GET "/zones/$ZONE_ID/dns_records?name=$host" | jget "len(d.get('result') or [])")"
+  if [ "$existing" != "0" ]; then
+    say "dns: $host (already exists)"
+    return
+  fi
+  cf POST "/zones/$ZONE_ID/dns_records" \
+    "{\"type\":\"AAAA\",\"name\":\"$host\",\"content\":\"100::\",\"proxied\":true,\"comment\":\"shhtml\"}" \
+    | jget "d['success']" | grep -q True || die "DNS record creation failed for $host"
+  say "dns: $host (created, proxied)"
+}
+dns_ensure "$PUBLISH_HOST"
+dns_ensure "$STATIC_HOST"
+
+# 7. Access applications
+emails_json() {
+  python3 -c "import json,sys
+print(json.dumps([{'email': {'email': e.strip()}} for e in sys.argv[1].split(',') if e.strip()]))" "$EMAILS"
+}
+
+access_app() { # access_app <name> <domain> -> prints app id \n aud
+  local name="$1" domain="$2"
+  local found
+  found="$(cf GET "/accounts/$ACCOUNT_ID/access/apps" | python3 -c "import json,sys
+d = json.load(sys.stdin)
+for a in d.get('result') or []:
+    if a.get('domain') == sys.argv[1]:
+        print(a['id']); print(a['aud']); break" "$domain")"
+  if [ -n "$found" ]; then
+    printf '%s\n' "$found"
+    return
+  fi
+  cf POST "/accounts/$ACCOUNT_ID/access/apps" \
+    "{\"name\":\"$name\",\"domain\":\"$domain\",\"type\":\"self_hosted\",\"session_duration\":\"24h\"}" \
+    | python3 -c "import json,sys
+d = json.load(sys.stdin)
+if not d.get('success'):
+    print(json.dumps(d.get('errors')), file=sys.stderr); sys.exit(1)
+print(d['result']['id']); print(d['result']['aud'])"
+}
+
+policy_ensure() { # policy_ensure <app_id> <name>
+  local app_id="$1" name="$2"
+  local count
+  count="$(cf GET "/accounts/$ACCOUNT_ID/access/apps/$app_id/policies" | jget "len(d.get('result') or [])")"
+  if [ "$count" != "0" ]; then
+    say "  policy: exists ($count), leaving as is"
+    return
+  fi
+  cf POST "/accounts/$ACCOUNT_ID/access/apps/$app_id/policies" \
+    "{\"name\":\"$name\",\"decision\":\"allow\",\"include\":$(emails_json),\"precedence\":1}" \
+    | jget "d['success']" | grep -q True || die "policy creation failed for app $app_id"
+  say "  policy: allow [$EMAILS]"
+}
+
+say "access app: publisher ($PUBLISH_HOST/auth)"
+PUB_APP="$(access_app "shhtml publisher" "$PUBLISH_HOST/auth")"
+PUB_ID="$(printf '%s' "$PUB_APP" | sed -n 1p)"
+PUB_AUD="$(printf '%s' "$PUB_APP" | sed -n 2p)"
+policy_ensure "$PUB_ID" "shhtml publishers"
+
+say "access app: viewer ($STATIC_HOST)"
+VIEW_APP="$(access_app "shhtml viewer" "$STATIC_HOST")"
+VIEW_ID="$(printf '%s' "$VIEW_APP" | sed -n 1p)"
+policy_ensure "$VIEW_ID" "shhtml viewers"
+
+# 8. wrangler.toml
+TOML="$WORKER_DIR/wrangler.toml"
+python3 - "$WORKER_DIR/wrangler.toml.example" "$TOML" <<PYEOF
+import sys
+src, dst = sys.argv[1], sys.argv[2]
+t = open(src).read()
+t = t.replace("YOUR_CLOUDFLARE_ACCOUNT_ID", "$ACCOUNT_ID")
+t = t.replace("publish.example.com", "$PUBLISH_HOST")
+t = t.replace("static.example.com", "$STATIC_HOST")
+t = t.replace("example.com", "$ZONE")
+t = t.replace("your-team", "$TEAM")
+t = t.replace("PASTE_ACCESS_APP_AUD", "$PUB_AUD")
+t = t.replace('bucket_name = "shhtml"', 'bucket_name = "$BUCKET"')
+open(dst, "w").write(t)
+PYEOF
+say "wrote: $TOML"
+
+say ""
+say "provisioned. next steps:"
+say "  1. cd $WORKER_DIR"
+say "  2. npx -y wrangler@4 deploy"
+say "  3. openssl rand -hex 32 | npx -y wrangler@4 secret put SIGNING_SECRET"
+say "  4. shh init https://$PUBLISH_HOST https://$STATIC_HOST"
+say "  5. shh login"

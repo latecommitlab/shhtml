@@ -1,0 +1,311 @@
+#!/usr/bin/env bash
+# shh: publish static pages to your shhtml instance.
+#
+# Commands:
+#   shh init <publish_url> <static_url>   point this machine at an instance
+#   shh login                             browser sign-in, caches a token
+#   shh token <value>                     save a token obtained manually
+#   shh whoami                            show who the cached token belongs to
+#   shh publish <path> [files...] [--dir DIR] [--force]
+#   shh url <path>                        print the public URL for a path
+#   shh selftest                          run the CLI's built-in checks
+#
+# Requirements: bash, curl, python3. Nothing else.
+
+set -euo pipefail
+
+CONFIG_DIR="${SHH_CONFIG_DIR:-$HOME/.config/shhtml}"
+CONFIG_FILE="$CONFIG_DIR/config.json"
+TOKEN_FILE="$CONFIG_DIR/token"
+
+die() { printf 'shh: %s\n' "$*" >&2; exit 1; }
+say() { printf '%s\n' "$*"; }
+
+need() { command -v "$1" >/dev/null 2>&1 || die "$1 is required"; }
+need curl; need python3
+
+json_get() { # json_get <file> <key>
+  python3 -c 'import json,sys
+try:
+    print(json.load(open(sys.argv[1])).get(sys.argv[2], ""))
+except Exception:
+    pass' "$1" "$2"
+}
+
+publish_url() {
+  [ -f "$CONFIG_FILE" ] || die "not configured. Run: shh init <publish_url> <static_url>"
+  local u; u="$(json_get "$CONFIG_FILE" publish_url)"
+  [ -n "$u" ] || die "config is missing publish_url ($CONFIG_FILE)"
+  printf '%s' "${u%/}"
+}
+
+static_url() {
+  [ -f "$CONFIG_FILE" ] || die "not configured. Run: shh init <publish_url> <static_url>"
+  local u; u="$(json_get "$CONFIG_FILE" static_url)"
+  [ -n "$u" ] || die "config is missing static_url ($CONFIG_FILE)"
+  printf '%s' "${u%/}"
+}
+
+token() {
+  [ -s "$TOKEN_FILE" ] || return 1
+  cat "$TOKEN_FILE"
+}
+
+# ---------------------------------------------------------------- content types
+
+content_type() {
+  case "${1##*.}" in
+    html|htm) echo "text/html; charset=utf-8" ;;
+    css)      echo "text/css; charset=utf-8" ;;
+    js|mjs)   echo "text/javascript; charset=utf-8" ;;
+    json)     echo "application/json" ;;
+    png)      echo "image/png" ;;
+    jpg|jpeg) echo "image/jpeg" ;;
+    gif)      echo "image/gif" ;;
+    svg)      echo "image/svg+xml" ;;
+    webp)     echo "image/webp" ;;
+    avif)     echo "image/avif" ;;
+    ico)      echo "image/x-icon" ;;
+    woff)     echo "font/woff" ;;
+    woff2)    echo "font/woff2" ;;
+    ttf)      echo "font/ttf" ;;
+    otf)      echo "font/otf" ;;
+    pdf)      echo "application/pdf" ;;
+    xml)      echo "application/xml" ;;
+    txt|md)   echo "text/plain; charset=utf-8" ;;
+    mp4)      echo "video/mp4" ;;
+    webm)     echo "video/webm" ;;
+    mp3)      echo "audio/mpeg" ;;
+    wasm)     echo "application/wasm" ;;
+    map)      echo "application/json" ;;
+    *)        echo "application/octet-stream" ;;
+  esac
+}
+
+# ---------------------------------------------------------------- path rules
+
+normalize_path() { # lowercase, spaces to hyphens; validate
+  python3 -c 'import re, sys
+p = sys.argv[1].strip().lower().replace(" ", "-").strip("/")
+if not re.fullmatch(r"[a-z0-9][a-z0-9/_-]*", p) or "//" in p:
+    sys.exit(1)
+print(p)' "$1" 2>/dev/null || die "invalid path name: $1 (use letters, digits, hyphens, underscores, slashes; must start with a letter or digit)"
+}
+
+# ---------------------------------------------------------------- auth
+
+cmd_init() {
+  [ $# -eq 2 ] || die "usage: shh init <publish_url> <static_url>"
+  mkdir -p "$CONFIG_DIR"
+  python3 -c 'import json,sys
+json.dump({"publish_url": sys.argv[1], "static_url": sys.argv[2]}, open(sys.argv[3], "w"), indent=2)' \
+    "$1" "$2" "$CONFIG_FILE"
+  chmod 600 "$CONFIG_FILE"
+  say "configured:"
+  say "  publish: $1"
+  say "  static:  $2"
+}
+
+cmd_token() {
+  [ $# -eq 1 ] || die "usage: shh token <value>"
+  mkdir -p "$CONFIG_DIR"
+  printf '%s' "$1" > "$TOKEN_FILE"
+  chmod 600 "$TOKEN_FILE"
+  cmd_whoami
+}
+
+cmd_login() {
+  local base; base="$(publish_url)"
+  mkdir -p "$CONFIG_DIR"
+  say "opening your browser to sign in..."
+  python3 - "$base" "$TOKEN_FILE" <<'PYEOF'
+import http.server, socketserver, sys, threading, urllib.parse, webbrowser, os
+
+base, token_file = sys.argv[1], sys.argv[2]
+result = {}
+
+class Handler(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+        tok = q.get("token", [""])[0]
+        if tok:
+            result["token"] = tok
+            result["email"] = q.get("email", [""])[0]
+            body = b"<html><body style='font-family:monospace;text-align:center;margin-top:80px'><h2>shh: token captured</h2>You can close this tab.</body></html>"
+            self.send_response(200)
+        else:
+            body = b"missing token"
+            self.send_response(400)
+        self.send_header("Content-Type", "text/html")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+        threading.Thread(target=self.server.shutdown, daemon=True).start()
+
+    def log_message(self, *a):
+        pass
+
+with socketserver.TCPServer(("127.0.0.1", 0), Handler) as httpd:
+    port = httpd.server_address[1]
+    url = f"{base}/auth?callback=http%3A%2F%2F127.0.0.1%3A{port}%2F"
+    webbrowser.open(url)
+    print(f"if the browser did not open, visit:\n  {url}")
+    httpd.timeout = 300
+    httpd.serve_forever()
+
+tok = result.get("token")
+if not tok:
+    print("no token received", file=sys.stderr)
+    sys.exit(1)
+with open(token_file, "w") as f:
+    f.write(tok)
+os.chmod(token_file, 0o600)
+print(f"signed in as {result.get('email') or 'unknown'}")
+PYEOF
+}
+
+require_auth() {
+  if ! token >/dev/null; then
+    say "no cached token; starting sign-in."
+    cmd_login
+  fi
+}
+
+cmd_whoami() {
+  local base tok; base="$(publish_url)"
+  tok="$(token)" || die "no token cached. Run: shh login"
+  local resp; resp="$(curl -sS -H "Authorization: Bearer $tok" "$base/whoami")"
+  local email; email="$(printf '%s' "$resp" | python3 -c 'import json,sys
+try:
+    d = json.load(sys.stdin); print(d.get("email", ""))
+except Exception:
+    pass')"
+  [ -n "$email" ] || die "token rejected by the server (run: shh login). Response: $resp"
+  say "signed in as $email"
+}
+
+# ---------------------------------------------------------------- publish
+
+cmd_publish() {
+  [ $# -ge 1 ] || die "usage: shh publish <path> [files...] [--dir DIR] [--force]"
+  local rawpath="$1"; shift
+  local path; path="$(normalize_path "$rawpath")"
+
+  local force=0 dir="" files=()
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --force) force=1 ;;
+      --dir) shift; [ $# -gt 0 ] || die "--dir needs a value"; dir="$1" ;;
+      -*) die "unknown flag: $1" ;;
+      *) files+=("$1") ;;
+    esac
+    shift
+  done
+
+  if [ -n "$dir" ]; then
+    [ -d "$dir" ] || die "not a directory: $dir"
+    while IFS= read -r -d '' f; do files+=("$f"); done \
+      < <(find "$dir" -type f ! -name '.*' ! -path '*/.*' -print0)
+    [ ${#files[@]} -gt 0 ] || die "no files found in $dir"
+  fi
+  [ ${#files[@]} -gt 0 ] || die "nothing to publish. Pass files or --dir."
+
+  for f in "${files[@]}"; do [ -f "$f" ] || die "no such file: $f"; done
+
+  local base tok; base="$(publish_url)"
+  require_auth
+  tok="$(token)"
+
+  # collision check
+  local status
+  status="$(curl -sS -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $tok" "$base/check/$path")"
+  if [ "$status" = "200" ] && [ "$force" -ne 1 ]; then
+    die "'$path' already has published content. Re-run with --force to replace it."
+  elif [ "$status" = "401" ] || [ "$status" = "403" ]; then
+    say "token expired; signing in again."
+    cmd_login
+    tok="$(token)"
+  fi
+
+  local uploaded=0
+  for f in "${files[@]}"; do
+    local rel
+    if [ -n "$dir" ]; then
+      rel="${f#"$dir"}"; rel="${rel#/}"
+    else
+      rel="$(basename "$f")"
+    fi
+    local key="$path/$rel"
+    local ct; ct="$(content_type "$f")"
+    local code
+    code="$(curl -sS -o /tmp/shh-upload-resp.$$ -w '%{http_code}' -X PUT \
+      -H "Authorization: Bearer $tok" -H "Content-Type: $ct" \
+      --data-binary "@$f" "$base/upload/$key")"
+    if [ "$code" != "200" ]; then
+      local body; body="$(cat /tmp/shh-upload-resp.$$ 2>/dev/null || true)"
+      rm -f /tmp/shh-upload-resp.$$
+      die "upload failed for $key (HTTP $code): $body"
+    fi
+    rm -f /tmp/shh-upload-resp.$$
+    uploaded=$((uploaded + 1))
+    say "  up: $key ($ct)"
+  done
+
+  curl -sS -o /dev/null -X POST -H "Authorization: Bearer $tok" "$base/finalize/$path" || true
+
+  local surl; surl="$(static_url)"
+  say ""
+  say "published $uploaded file(s)."
+  if [ ${#files[@]} -eq 1 ] && [ -z "$dir" ]; then
+    say "  $surl/$path/$(basename "${files[0]}")"
+  fi
+  say "  $surl/$path"
+}
+
+cmd_url() {
+  [ $# -eq 1 ] || die "usage: shh url <path>"
+  local path; path="$(normalize_path "$1")"
+  say "$(static_url)/$path"
+}
+
+# ---------------------------------------------------------------- selftest
+
+cmd_selftest() {
+  local fails=0
+  # both helpers run the check in a subshell so a die/exit inside the check
+  # fails that check instead of killing the selftest
+  t() { # t <desc> <expr...>
+    local desc="$1"; shift
+    if ( "$@" ) >/dev/null 2>&1; then say "ok: $desc"; else say "FAIL: $desc"; fails=$((fails+1)); fi
+  }
+  tf() { # expect failure
+    local desc="$1"; shift
+    if ( "$@" ) >/dev/null 2>&1; then say "FAIL: $desc"; fails=$((fails+1)); else say "ok: $desc"; fi
+  }
+  t "content_type html" [ "$(content_type a.html)" = "text/html; charset=utf-8" ]
+  t "content_type png" [ "$(content_type a.png)" = "image/png" ]
+  t "content_type unknown falls back" [ "$(content_type a.zzz)" = "application/octet-stream" ]
+  t "normalize keeps simple path" [ "$(normalize_path finance)" = "finance" ]
+  t "normalize lowercases and hyphenates" [ "$(normalize_path 'My Page')" = "my-page" ]
+  t "normalize allows nesting" [ "$(normalize_path a/b/c)" = "a/b/c" ]
+  tf "normalize rejects traversal" normalize_path "../etc"
+  tf "normalize rejects leading dash" normalize_path "-x"
+  tf "normalize rejects dotfiles" normalize_path ".shh"
+  [ $fails -eq 0 ] && say "selftest passed" || die "$fails selftest failure(s)"
+}
+
+# ---------------------------------------------------------------- main
+
+case "${1:-}" in
+  init)     shift; cmd_init "$@" ;;
+  login)    shift; cmd_login "$@" ;;
+  token)    shift; cmd_token "$@" ;;
+  whoami)   shift; cmd_whoami "$@" ;;
+  publish)  shift; cmd_publish "$@" ;;
+  url)      shift; cmd_url "$@" ;;
+  selftest) shift; cmd_selftest "$@" ;;
+  ""|help|-h|--help)
+    sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'
+    ;;
+  *) die "unknown command: $1 (try: shh help)" ;;
+esac

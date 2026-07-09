@@ -1,0 +1,13 @@
+{
+  "name": "shhtml",
+  "owner": {
+    "name": "MechanicMishap"
+  },
+  "plugins": [
+    {
+      "name": "shhtml",
+      "description": "Publish HTML quietly. Private-by-default static publishing on your own Cloudflare account.",
+      "source": "./plugin"
+    }
+  ]
+}

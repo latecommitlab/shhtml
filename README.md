@@ -59,34 +59,51 @@ MechanicMishap/shhtml
 
 You now have the `/shh` and `/shh-setup` skills in Claude Code.
 
-### Run `shh` from your terminal
+**Step 3 — set it up (Claude Code does the Cloudflare work for you).**
 
-The `/shh` skill works inside Claude Code right away. To also use `shh` as a plain
-terminal command, symlink it onto your PATH once:
+If you're standing up your own instance, run:
+
+```
+/shh-setup
+```
+
+or just tell Claude Code what you want, for example:
+
+> Set up shhtml on my Cloudflare for the domain `example.com`, and let `me@example.com` publish.
+
+Claude provisions everything on your Cloudflare account: the R2 bucket, the Worker,
+DNS for `publish.<domain>` and `static.<domain>`, and the Cloudflare Access login
+rules (who may publish, who may view). You approve a step or two in the Cloudflare
+dashboard. Prerequisites: a domain already on Cloudflare, a free Zero Trust org, Node
+18+, and a Cloudflare API token (Workers Scripts, Workers R2 Storage, Access: Apps
+and Policies, DNS, Workers Routes). Full detail in [Host your own instance](#host-your-own-instance).
+
+If an instance was already set up for you, ask Claude Code to connect and sign you in
+(use that instance's real hostnames):
+
+> Connect shhtml to `https://publish.example.com` and `https://static.example.com`, then log me in.
+
+A browser opens once for the email sign-in, and you're ready.
+
+**Step 4 — publish.** Ask Claude Code:
+
+> Publish this page as `finance`.
+
+and you get back `https://static.<domain>/finance`. Re-publishing to the same name
+replaces it in place.
+
+### Advanced: run `shh` directly from your terminal
+
+Everything above works by asking Claude Code, which runs the bundled `shh` CLI for
+you. If you'd rather run `shh` yourself as a plain terminal command, symlink it onto
+your PATH once:
 
 ```
 ln -s "$(find ~/.claude/plugins -path '*shhtml*/skills/shh/scripts/shh' | head -1)" /usr/local/bin/shh
 ```
 
-### Point it at an instance and sign in
-
-If someone already runs an instance and added your email to the allow list, point
-your machine at it — **use that instance's real hostnames, not the placeholders below:**
-
-```
-shh init https://publish.example.com https://static.example.com
-shh login
-```
-
-`shh login` opens a browser once; sign in with an allow-listed email and a 30-day
-token is cached. Then publish:
-
-```
-shh publish finance index.html            # -> https://static.<domain>/finance
-shh publish finance --dir ./build
-shh publish finance --force index.html    # replace what is there
-shh whoami
-```
+Then the CLI is: `shh init <publish-url> <static-url>`, `shh login`,
+`shh publish <name> <files…>`, `shh whoami`.
 
 ## Host your own instance
 

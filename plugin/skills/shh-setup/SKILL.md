@@ -1,7 +1,6 @@
 ---
 name: shh-setup
-description: One-time provisioning of a shhtml instance on the user's own Cloudflare account. Creates the R2 bucket, DNS records, Access applications, and deploys the worker.
-disable-model-invocation: true
+description: Provision a shhtml instance on the user's own Cloudflare account (one-time setup). Use when the user wants to set up, provision, install, or host shhtml, or connect shhtml to their own domain. Creates the R2 bucket, DNS, Cloudflare Access apps, deploys the worker, and points the CLI at it.
 allowed-tools:
   - Bash
   - Read

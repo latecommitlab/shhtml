@@ -35,25 +35,54 @@ one-time code to their email. No Cloudflare accounts needed on either side.
 
 ## Install the plugin
 
-In Claude Code:
+These are **two separate commands** — run them one at a time in Claude Code. Do
+not paste both into one prompt.
+
+**Step 1 — add the marketplace:**
 
 ```
 /plugin marketplace add MechanicMishap/shhtml
+```
+
+If Claude Code opens an "Add Marketplace" box asking for the source, type only the
+repo shorthand there (nothing after it):
+
+```
+MechanicMishap/shhtml
+```
+
+**Step 2 — install the plugin** (after step 1 finishes):
+
+```
 /plugin install shhtml@shhtml
 ```
 
-If someone already runs an instance and put your email on the list, point your
-machine at it and sign in:
+You now have the `/shh` and `/shh-setup` skills in Claude Code.
+
+### Run `shh` from your terminal
+
+The `/shh` skill works inside Claude Code right away. To also use `shh` as a plain
+terminal command, symlink it onto your PATH once:
+
+```
+ln -s "$(find ~/.claude/plugins -path '*shhtml*/skills/shh/scripts/shh' | head -1)" /usr/local/bin/shh
+```
+
+### Point it at an instance and sign in
+
+If someone already runs an instance and added your email to the allow list, point
+your machine at it — **use that instance's real hostnames, not the placeholders below:**
 
 ```
 shh init https://publish.example.com https://static.example.com
 shh login
 ```
 
-Then ask Claude to publish something, or drive the CLI yourself:
+`shh login` opens a browser once; sign in with an allow-listed email and a 30-day
+token is cached. Then publish:
 
 ```
-shh publish finance index.html
+shh publish finance index.html            # -> https://static.<domain>/finance
 shh publish finance --dir ./build
 shh publish finance --force index.html    # replace what is there
 shh whoami

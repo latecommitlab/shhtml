@@ -92,6 +92,14 @@ if not re.fullmatch(r"[a-z0-9][a-z0-9/_-]*", p) or "//" in p:
 print(p)' "$1" 2>/dev/null || die "invalid path name: $1 (use letters, digits, hyphens, underscores, slashes; must start with a letter or digit)"
 }
 
+# The worker rewrites /<path> to /<path>/index.html and has no other index
+# rule, so the short URL is only real when the publish contains an index.html.
+short_url_ok() { # short_url_ok <rel...>
+  local r
+  for r in "$@"; do [ "$r" = "index.html" ] && return 0; done
+  return 1
+}
+
 # ---------------------------------------------------------------- auth
 
 cmd_init() {
@@ -171,6 +179,10 @@ require_auth() {
   fi
 }
 
+check_path_status() { # check_path_status <base> <path> <token> -> HTTP status
+  curl -sS -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $3" "$1/check/$2"
+}
+
 cmd_whoami() {
   local base tok; base="$(publish_url)"
   tok="$(token)" || die "no token cached. Run: shh login"
@@ -216,18 +228,22 @@ cmd_publish() {
   require_auth
   tok="$(token)"
 
-  # collision check
+  # Collision check. A rejected token means the answer was about our
+  # credentials, not about the path, so re-auth and ask again -- otherwise an
+  # expired token would silently turn every publish into a --force publish.
   local status
-  status="$(curl -sS -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $tok" "$base/check/$path")"
-  if [ "$status" = "200" ] && [ "$force" -ne 1 ]; then
-    die "'$path' already has published content. Re-run with --force to replace it."
-  elif [ "$status" = "401" ] || [ "$status" = "403" ]; then
+  status="$(check_path_status "$base" "$path" "$tok")"
+  if [ "$status" = "401" ] || [ "$status" = "403" ]; then
     say "token expired; signing in again."
     cmd_login
     tok="$(token)"
+    status="$(check_path_status "$base" "$path" "$tok")"
+  fi
+  if [ "$status" = "200" ] && [ "$force" -ne 1 ]; then
+    die "'$path' already has published content. Re-run with --force to replace it."
   fi
 
-  local uploaded=0
+  local uploaded=0 rels=()
   for f in "${files[@]}"; do
     local rel
     if [ -n "$dir" ]; then
@@ -235,6 +251,7 @@ cmd_publish() {
     else
       rel="$(basename "$f")"
     fi
+    rels+=("$rel")
     local key="$path/$rel"
     local ct; ct="$(content_type "$f")"
     local code
@@ -251,15 +268,33 @@ cmd_publish() {
     say "  up: $key ($ct)"
   done
 
-  curl -sS -o /dev/null -X POST -H "Authorization: Bearer $tok" "$base/finalize/$path" || true
+  # The marker is what the next publish's collision check reads. Failing to
+  # write it does not undo the upload, but it does mean the next publish will
+  # not warn before overwriting, so say so rather than swallowing it.
+  local fin
+  fin="$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
+    -H "Authorization: Bearer $tok" "$base/finalize/$path" || echo 000)"
 
   local surl; surl="$(static_url)"
   say ""
   say "published $uploaded file(s)."
-  if [ ${#files[@]} -eq 1 ] && [ -z "$dir" ]; then
-    say "  $surl/$path/$(basename "${files[0]}")"
+  if short_url_ok "${rels[@]}"; then
+    say "  $surl/$path"
+  elif [ ${#rels[@]} -eq 1 ]; then
+    say "  $surl/$path/${rels[0]}"
+    say ""
+    say "note: no index.html in this publish, so $surl/$path itself will 404."
+    say "      republish the entry page as index.html to get the short URL."
+  else
+    say "note: no index.html in this publish, so $surl/$path itself will 404."
+    for r in "${rels[@]}"; do say "  $surl/$path/$r"; done
   fi
-  say "  $surl/$path"
+  if [ "$fin" != "200" ]; then
+    say ""
+    say "warning: could not write the publish marker (HTTP $fin). The files are"
+    say "         live, but the next publish to '$path' will not warn you"
+    say "         before overwriting them."
+  fi
 }
 
 cmd_url() {
@@ -291,6 +326,10 @@ cmd_selftest() {
   tf "normalize rejects traversal" normalize_path "../etc"
   tf "normalize rejects leading dash" normalize_path "-x"
   tf "normalize rejects dotfiles" normalize_path ".shh"
+  t "short url offered when index.html is published" short_url_ok index.html app.css
+  t "short url offered for a nested index.html publish" short_url_ok app.css index.html
+  tf "short url withheld without an index.html" short_url_ok report.html app.css
+  tf "short url withheld for a lone non-index page" short_url_ok report.html
   [ $fails -eq 0 ] && say "selftest passed" || die "$fails selftest failure(s)"
 }
 

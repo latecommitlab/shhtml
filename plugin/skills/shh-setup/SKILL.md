@@ -1,6 +1,7 @@
 ---
 name: shh-setup
-description: Provision a shhtml instance on the user's own Cloudflare account (one-time setup). Use when the user wants to set up, provision, install, or host shhtml, or connect shhtml to their own domain. Creates the R2 bucket, DNS, Cloudflare Access apps, deploys the worker, and points the CLI at it.
+description: Provision a new shhtml instance on the user's own Cloudflare account — R2 bucket, DNS records, and Cloudflare Access applications — then walk the user through deploying the worker and point the CLI at it. One-time setup. Use when the user wants to set up, provision, or host their own shhtml, or connect shhtml to their domain. Publishing to an instance that already exists is the shh skill's job, not this one.
+disable-model-invocation: true
 allowed-tools:
   - Bash
   - Read
@@ -38,7 +39,12 @@ ${CLAUDE_PLUGIN_ROOT}/skills/shh-setup/scripts/provision \
   --worker-dir <path to worker/>
 ```
 
-It verifies the token, resolves the zone and account, finds the Zero Trust team, creates the R2 bucket, both DNS records, and both Access applications (publisher on `/auth`, viewer on the whole static hostname, both allowing the listed emails), then writes `wrangler.toml`.
+It verifies the token, resolves the zone and account, finds the Zero Trust team, creates both DNS records and both Access applications (publisher on `/auth`, viewer on the whole static hostname, both allowing the listed emails), creates the R2 bucket, then writes `wrangler.toml`.
+
+Two stops are expected on a fresh account rather than failures, and both are recoverable by fixing the thing it names and re-running the identical command — the script reuses everything it already created:
+
+- **No Zero Trust organization.** One-time and free at one.dash.cloudflare.com.
+- **R2 not enabled.** A one-time click-through under R2 at dash.cloudflare.com. It is the free tier, though Cloudflare may ask for a payment method it will not charge. The script deliberately creates the bucket last so everything else is already in place when this happens.
 
 2. Deploy the worker, then set the signing secret:
 

@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  <img src="./.github/readme/hero.svg" width="100%" alt="You ask your agent to publish a page. It replies with a link on your domain. Visitors sign in by email before they see it.">
+  <img src="./.github/readme/hero.svg" width="100%" alt="1. Ask your agent to publish a page. 2. Get a private link on your domain. 3. People on your list sign in with an email code and see the page; anyone else stops at sign-in.">
 </p>
 
 Your agent makes a dashboard, a report, or a whole site. You say **"publish this as finance."** You get back `https://static.yourdomain.com/finance`. Only the people on your list can open it.

@@ -1,52 +1,108 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="960" height="496" viewBox="0 0 960 496" role="img" aria-label="You ask your agent to publish a page. It replies with a link on your domain. Visitors see a Cloudflare sign-in before the page.">
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="404" viewBox="0 0 960 404" role="img" aria-label="Step 1: you ask your agent to publish a page. Step 2: it gives you a private link on your domain. Step 3: people on your list sign in with an email code and see the page; anyone else stops at sign-in.">
   <defs>
-    <filter id="lift" x="-10%" y="-10%" width="120%" height="130%">
-      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#000" flood-opacity="0.28"/>
-    </filter>
+    <linearGradient id="stage" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#141922"/><stop offset="1" stop-color="#0b0f14"/></linearGradient>
+    <clipPath id="ask"><rect x="80" y="212" width="190" height="30"><animate attributeName="width" dur="12.0s" repeatCount="indefinite" keyTimes="0.0000;0.0500;0.1667;0.9500;0.9833;1.0000" values="0;0;190;190;0;0"/></rect></clipPath>
+    <clipPath id="email"><rect x="712" y="198" width="160" height="24"><animate attributeName="width" dur="12.0s" repeatCount="indefinite" keyTimes="0.0000;0.4583;0.5500;0.9500;0.9833;1.0000" values="0;0;160;160;0;0"/></rect></clipPath>
   </defs>
-  <style>
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size: 16px; }
-    .sans { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
-  </style>
+  <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <rect x="1" y="1" width="958" height="402" rx="20" fill="url(#stage)" stroke="#262c36"/>
+  
+  <circle cx="43" cy="44" r="13" fill="#F26A1F"/>
+  <text x="43" y="49" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">1</text>
+  <text x="66" y="50" font-size="17" font-weight="700" fill="#f0f3f6">Ask your agent</text>
+  
+  <circle cx="358" cy="44" r="13" fill="#F26A1F"/>
+  <text x="358" y="49" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">2</text>
+  <text x="381" y="50" font-size="17" font-weight="700" fill="#f0f3f6">Get a private link</text>
+  
+  <circle cx="673" cy="44" r="13" fill="#F26A1F"/>
+  <text x="673" y="49" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">3</text>
+  <text x="696" y="50" font-size="17" font-weight="700" fill="#f0f3f6">Only your list gets in</text>
 
-  <!-- the agent -->
-  <g filter="url(#lift)">
-    <rect x="10" y="10" width="640" height="404" rx="14" fill="#0d1117" stroke="#30363d"/>
-    <path d="M24 10h612a14 14 0 0 1 14 14v26H10V24a14 14 0 0 1 14-14z" fill="#161b22"/>
-    <circle cx="36" cy="30" r="6" fill="#ff5f57"/><circle cx="56" cy="30" r="6" fill="#febc2e"/><circle cx="76" cy="30" r="6" fill="#28c840"/>
-    <text x="330" y="35" text-anchor="middle" class="sans" font-size="13" fill="#8b949e">Claude Code or Codex · ~/reports</text>
+  <!-- 1: you ask -->
+  
+  <rect x="30" y="74" width="270" height="262" rx="12" fill="#161b22" stroke="#30363d"/>
+  <path d="M42 74h246a12 12 0 0 1 12 12v18H30V86a12 12 0 0 1 12-12z" fill="#1c2129"/>
+  <circle cx="48" cy="89" r="5" fill="#ff5f57"/><circle cx="64" cy="89" r="5" fill="#febc2e"/><circle cx="80" cy="89" r="5" fill="#28c840"/>
+  <text x="286" y="93" text-anchor="end" font-size="11.5" fill="#8b949e">Claude Code · Codex</text>
+  <rect x="48" y="122" width="234" height="60" rx="10" fill="#0d1117" stroke="#30363d"/>
+  <path d="M64 138h13l7 7v20a2 2 0 0 1-2 2H64a2 2 0 0 1-2-2v-25a2 2 0 0 1 2-2z" fill="#F26A1F"/>
+  <path d="M77 138v5a2 2 0 0 0 2 2h5" fill="#ffd1ad"/>
+  <text x="96" y="148" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14.5" fill="#e6edf3">index.html</text>
+  <text x="96" y="168" font-size="13" fill="#8b949e">your Q3 finance dashboard</text>
+  <rect x="66" y="206" width="216" height="42" rx="14" fill="#F26A1F"/>
+  <text x="80" y="232" font-size="15" font-weight="600" fill="#fff" clip-path="url(#ask)">Publish this as finance</text>
+  <g opacity="1"><animate attributeName="opacity" dur="12.0s" repeatCount="indefinite" keyTimes="0.0000;0.1750;0.2000;0.9500;0.9833;1.0000" values="0;0;1;1;0;0"/>
+    <circle cx="54" cy="288" r="4" fill="#8b949e"/>
+    <text x="66" y="292" font-size="13" fill="#8b949e">Checks the page, then uploads it</text>
   </g>
-  <g class="mono">
-    <text x="40" y="96" fill="#f6821f">›</text><text x="62" y="96" fill="#e6edf3">publish this page as finance</text>
-    <text x="40" y="146" fill="#6e7681">●</text><text x="62" y="146" fill="#8b949e">Checked index.html: no outside calls, no keys.</text>
-    <text x="40" y="176" fill="#6e7681">●</text><text x="62" y="176" fill="#8b949e">Uploaded 3 files to finance/</text>
-    <text x="40" y="226" fill="#3fb950">✓</text><text x="62" y="226" fill="#e6edf3">Live at <tspan fill="#58a6ff">https://static.yourdomain.com/finance</tspan></text>
-    <text x="62" y="256" fill="#8b949e">Only people on your list can open it.</text>
-    <text x="40" y="306" fill="#f6821f">›</text>
-    <rect x="62" y="292" width="10" height="18" fill="#e6edf3" opacity="0.85">
-      <animate attributeName="opacity" values="0.85;0;0.85" dur="1.1s" repeatCount="indefinite"/>
-    </rect>
+  
+  <g opacity="1"><animate attributeName="opacity" dur="12.0s" repeatCount="indefinite" keyTimes="0.0000;0.2167;0.2417;0.9500;0.9833;1.0000" values="0;0;1;1;0;0"/>
+    <path d="M304 205h28" stroke="#F26A1F" stroke-width="3" stroke-linecap="round"/>
+    <path d="M325 197l9 8-9 8" fill="none" stroke="#F26A1F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
 
-  <!-- what a visitor sees -->
-  <g filter="url(#lift)">
-    <rect x="520" y="196" width="420" height="290" rx="12" fill="#ffffff" stroke="#d0d7de"/>
-    <path d="M532 196h396a12 12 0 0 1 12 12v26H520v-26a12 12 0 0 1 12-12z" fill="#f6f8fa"/>
-    <circle cx="540" cy="216" r="5" fill="#d0d7de"/><circle cx="556" cy="216" r="5" fill="#d0d7de"/><circle cx="572" cy="216" r="5" fill="#d0d7de"/>
-    <rect x="594" y="205" width="300" height="22" rx="11" fill="#ffffff" stroke="#d0d7de"/>
-    <path d="M608 214v-3a4 4 0 0 1 8 0v3" fill="none" stroke="#57606a" stroke-width="1.6"/>
-    <rect x="606" y="213.5" width="12" height="9" rx="2" fill="#57606a"/>
-    <text x="626" y="221" class="sans" font-size="12" fill="#57606a">static.yourdomain.com/finance</text>
+  <!-- 2: you get a link -->
+  
+  <rect x="345" y="74" width="270" height="262" rx="12" fill="#161b22" stroke="#30363d"/>
+  <path d="M357 74h246a12 12 0 0 1 12 12v18H345V86a12 12 0 0 1 12-12z" fill="#1c2129"/>
+  <circle cx="363" cy="89" r="5" fill="#ff5f57"/><circle cx="379" cy="89" r="5" fill="#febc2e"/><circle cx="395" cy="89" r="5" fill="#28c840"/>
+  <text x="601" y="93" text-anchor="end" font-size="11.5" fill="#8b949e">Claude Code · Codex</text>
+  <g opacity="1"><animate attributeName="opacity" dur="12.0s" repeatCount="indefinite" keyTimes="0.0000;0.2500;0.2750;0.9500;0.9833;1.0000" values="0;0;1;1;0;0"/>
+    <circle cx="369" cy="139" r="11" fill="#238636"/>
+    <path d="M364 139l3.5 3.5 6.5-7" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="389" y="136" font-size="15" font-weight="700" fill="#e6edf3">Published.</text>
+    <text x="389" y="156" font-size="13.5" fill="#8b949e">Only your list can open it.</text>
   </g>
-  <g class="sans">
-    <circle cx="730" cy="282" r="22" fill="#fff4ea"/>
-    <path d="M724 281v-5a6 6 0 0 1 12 0v5" fill="none" stroke="#f6821f" stroke-width="2.4"/>
-    <rect x="721" y="280" width="18" height="13" rx="3" fill="#f6821f"/>
-    <text x="730" y="332" text-anchor="middle" font-size="17" font-weight="600" fill="#1f2328">static.yourdomain.com</text>
-    <text x="730" y="354" text-anchor="middle" font-size="13" fill="#656d76">Get a login code emailed to you</text>
-    <rect x="590" y="372" width="280" height="36" rx="8" fill="#ffffff" stroke="#d0d7de"/>
-    <text x="604" y="395" font-size="14" fill="#8c959f">you@company.com</text>
-    <rect x="590" y="418" width="280" height="38" rx="8" fill="#f6821f"/>
-    <text x="730" y="442" text-anchor="middle" font-size="14" font-weight="600" fill="#ffffff">Send me a code</text>
+  <g opacity="1"><animate attributeName="opacity" dur="12.0s" repeatCount="indefinite" keyTimes="0.0000;0.2833;0.3083;0.9500;0.9833;1.0000" values="0;0;1;1;0;0"/>
+    <rect x="361" y="186" width="238" height="40" rx="20" fill="#0d1117" stroke="#388bfd" stroke-opacity=".55"/>
+    <path d="M376 205v-3a4 4 0 0 1 8 0v3" fill="none" stroke="#F26A1F" stroke-width="1.8"/>
+    <rect x="374" y="204" width="12" height="9" rx="2" fill="#F26A1F"/>
+    <text x="394" y="211" font-size="13" fill="#58a6ff">static.yourdomain.com/finance</text>
+  </g>
+  <g opacity="1"><animate attributeName="opacity" dur="12.0s" repeatCount="indefinite" keyTimes="0.0000;0.3167;0.3417;0.9500;0.9833;1.0000" values="0;0;1;1;0;0"/>
+    <text x="363" y="258" font-size="13" fill="#8b949e">Paste it in Slack, email, anywhere.</text>
+  </g>
+  
+  <g opacity="1"><animate attributeName="opacity" dur="12.0s" repeatCount="indefinite" keyTimes="0.0000;0.3667;0.3917;0.9500;0.9833;1.0000" values="0;0;1;1;0;0"/>
+    <path d="M619 205h28" stroke="#F26A1F" stroke-width="3" stroke-linecap="round"/>
+    <path d="M640 197l9 8-9 8" fill="none" stroke="#F26A1F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- 3: only your list gets in -->
+  <rect x="660" y="74" width="270" height="262" rx="12" fill="#ffffff" stroke="#d0d7de"/>
+  <path d="M672 74h246a12 12 0 0 1 12 12v22H660V86a12 12 0 0 1 12-12z" fill="#f6f8fa"/>
+  <circle cx="676" cy="91" r="4" fill="#d0d7de"/><circle cx="690" cy="91" r="4" fill="#d0d7de"/><circle cx="704" cy="91" r="4" fill="#d0d7de"/>
+  <rect x="716" y="81" width="202" height="20" rx="10" fill="#fff" stroke="#d0d7de"/>
+  <path d="M726 91v-2a3 3 0 0 1 6 0v2" fill="none" stroke="#57606a" stroke-width="1.3"/>
+  <rect x="724.5" y="90.5" width="9" height="7" rx="1.5" fill="#57606a"/>
+  <text x="739" y="95" font-size="10.5" fill="#57606a">static.yourdomain.com/finance</text>
+
+  <g opacity="0"><animate attributeName="opacity" dur="12.0s" repeatCount="indefinite" keyTimes="0.0000;0.4167;0.4417;0.6167;0.6417;1.0000" values="0;0;1;1;0;0"/>
+    <circle cx="795" cy="138" r="16" fill="#fff4ea"/>
+    <path d="M790 138v-4a5 5 0 0 1 10 0v4" fill="none" stroke="#F26A1F" stroke-width="2"/>
+    <rect x="787.5" y="137" width="15" height="11" rx="2.5" fill="#F26A1F"/>
+    <text x="795" y="178" text-anchor="middle" font-size="13" fill="#57606a">Get a login code emailed to you</text>
+    <rect x="700" y="192" width="190" height="32" rx="7" fill="#fff" stroke="#d0d7de"/>
+    <text x="712" y="213" font-size="13" fill="#1f2328" clip-path="url(#email)">sam@yourco.com</text>
+    <rect x="700" y="232" width="190" height="32" rx="7" fill="#F26A1F"/>
+    <text x="795" y="253" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">Send me a code</text>
+  </g>
+
+  <g opacity="1"><animate attributeName="opacity" dur="12.0s" repeatCount="indefinite" keyTimes="0.0000;0.6333;0.6667;0.9500;0.9833;1.0000" values="0;0;1;1;0;0"/>
+    <rect x="672" y="116" width="246" height="24" rx="6" fill="#dafbe1"/>
+    <path d="M681 128l3 3 5.5-6" fill="none" stroke="#1a7f37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="695" y="132.5" font-size="11.5" fill="#1a7f37">Signed in as sam@yourco.com</text>
+    <text x="676" y="166" font-size="16" font-weight="700" fill="#1f2328">Q3 finance</text>
+    <text x="676" y="184" font-size="11.5" fill="#656d76">Revenue by month</text>
+    <rect x="682" y="266" width="24" height="52" rx="4" fill="#F7A350"/><rect x="720" y="248" width="24" height="70" rx="4" fill="#F59A49"/><rect x="758" y="256" width="24" height="62" rx="4" fill="#F39042"/><rect x="796" y="230" width="24" height="88" rx="4" fill="#F1853A"/><rect x="834" y="214" width="24" height="104" rx="4" fill="#F07A31"/><rect x="872" y="190" width="24" height="128" rx="4" fill="#EE6A24"/>
+    <path d="M676 318.5h238" stroke="#d0d7de"/>
+  </g>
+
+  <g opacity="1"><animate attributeName="opacity" dur="12.0s" repeatCount="indefinite" keyTimes="0.0000;0.7000;0.7250;0.9500;0.9833;1.0000" values="0;0;1;1;0;0"/>
+    <rect x="660" y="352" width="270" height="34" rx="17" fill="#f85149" fill-opacity=".12" stroke="#f85149" stroke-opacity=".5"/>
+    <path d="M684 364l10 10M694 364l-10 10" stroke="#ff7b72" stroke-width="2.2" stroke-linecap="round"/>
+    <text x="706" y="374" font-size="13.5" fill="#ff7b72">Anyone else stops at sign-in</text>
+  </g>
   </g>
 </svg>

@@ -1,120 +1,156 @@
-# shhtml
+<p align="center">
+  <img src="./.github/readme/icon.svg" width="88" height="88" alt="">
+</p>
 
-Publish HTML quietly.
+<h1 align="center">shhtml</h1>
 
-shhtml turns a Cloudflare account you already have into a private static host,
-and gives Claude Code a `/shh` command to publish to it. You build a page, say
-"publish this as finance", and get back `https://static.yourdomain.com/finance`.
-Nobody can view it except the people you put on the list.
+<p align="center">
+  <b>Publish HTML quietly.</b><br>
+  Private pages on your own domain, put online by Claude Code or Codex.
+</p>
 
-There is no server to run and nothing to pay for. Files live in R2, a small
-Worker handles reads and writes, and Cloudflare Access does the logins. All of
-it fits in Cloudflare's free tiers.
+<p align="center">
+  <a href="#install"><img alt="Claude Code plugin" src="https://img.shields.io/badge/Claude_Code-plugin-D97757?logo=claude&logoColor=white"></a>
+  <a href="#install"><img alt="Codex plugin" src="https://img.shields.io/badge/Codex-plugin-1f2328"></a>
+  <a href="#why-shhtml"><img alt="Runs on Cloudflare's free plan" src="https://img.shields.io/badge/Cloudflare-free_plan-F38020?logo=cloudflare&logoColor=white"></a>
+  <a href="./LICENSE"><img alt="MIT license" src="https://img.shields.io/github/license/latecommitlab/shhtml?color=2ea44f"></a>
+</p>
 
-## How it works
+<p align="center">
+  <img src="./.github/readme/hero.svg" width="100%" alt="You ask your agent to publish a page. It replies with a link on your domain. Visitors sign in by email before they see it.">
+</p>
 
-```
-viewing                              publishing
--------                              ----------
-browser                              shh CLI (bash + curl)
-   |                                    |
-   v                                    v
-static.yourdomain.com              publish.yourdomain.com
-   |                                    |
-Cloudflare Access                  /auth behind Cloudflare Access,
-(who can view)                     everything else needs the token
-   |                               that /auth mints (HMAC, 30 days)
-   v                                    |
-Worker serves from R2  <----------- Worker writes to R2
-```
+Your agent makes a dashboard, a report, or a whole site. You say **"publish this as finance."** You get back `https://static.yourdomain.com/finance`. Only the people on your list can open it.
 
-The first time you publish, a browser tab opens, you sign in with an email on
-the allow list, and the CLI caches a signed token. After that publishing is
-just an upload. Viewers get a Cloudflare login wall and are in after a
-one-time code to their email. No Cloudflare accounts needed on either side.
+It runs on a Cloudflare account you already have. There is no server to look after and no bill.
 
-## Install the plugin
+## Why shhtml
 
-These are **two separate commands** — run them one at a time in Claude Code. Do
-not paste both into one prompt.
+- **Private by default.** Every page sits behind a Cloudflare sign-in. Viewers get a one-time code by email. Nobody needs an account.
+- **Your domain.** Links live on `static.yourdomain.com`, not on someone else's site.
+- **One sentence.** Your agent checks the page, uploads it, and hands back the link.
+- **Free.** Storage, hosting, and sign-in all fit Cloudflare's free plan, which covers up to 50 people.
 
-**Step 1 — add the marketplace:**
+## Install
+
+Run each line on its own.
+
+**Claude Code**
 
 ```
 /plugin marketplace add latecommitlab/shhtml
-```
-
-If Claude Code opens an "Add Marketplace" box asking for the source, type only the
-repo shorthand there (nothing after it):
-
-```
-latecommitlab/shhtml
-```
-
-**Step 2 — install the plugin** (after step 1 finishes):
-
-```
 /plugin install shhtml@shhtml
 ```
 
-You now have the `/shh` and `/shh-setup` skills in Claude Code.
-
-**Step 3 — set it up (Claude Code does the Cloudflare work for you).**
-
-If you're standing up your own instance, run:
+**Codex**
 
 ```
-/shh-setup
+codex plugin marketplace add latecommitlab/shhtml
+codex plugin add shhtml@shhtml
 ```
 
-or just tell Claude Code what you want, for example:
+## Set up your instance
 
-> Set up shhtml on my Cloudflare for the domain `example.com`, and let `me@example.com` publish.
+Do this once. You need:
 
-Claude provisions everything on your Cloudflare account: the R2 bucket, the Worker,
-DNS for `publish.<domain>` and `static.<domain>`, and the Cloudflare Access login
-rules (who may publish, who may view). You approve a step or two in the Cloudflare
-dashboard. Prerequisites: a domain already on Cloudflare, a free Zero Trust org, Node
-18+, and a Cloudflare API token (Workers Scripts, Workers R2 Storage, Access: Apps
-and Policies, DNS, Workers Routes). Full detail in [Host your own instance](#host-your-own-instance).
+- a domain on Cloudflare
+- a free Zero Trust team, made at [one.dash.cloudflare.com](https://one.dash.cloudflare.com)
+- Node 18 or later
+- a Cloudflare API token with Workers Scripts, Workers R2 Storage, Access: Apps and Policies, DNS, and Workers Routes
 
-If an instance was already set up for you, ask Claude Code to connect and sign you in
-(use that instance's real hostnames):
+Start setup with `/shh-setup` in Claude Code. In Codex, type `$` and pick **shh-setup**. Then tell it your domain and who may publish:
 
-> Connect shhtml to `https://publish.example.com` and `https://static.example.com`, then log me in.
+> Set up shhtml for example.com, and let me@example.com publish.
 
-A browser opens once for the email sign-in, and you're ready.
+It makes the storage, the two web addresses, and the sign-in rules, then walks you through the deploy. It takes about ten minutes.
 
-**Step 4 — publish.** Ask Claude Code:
+Someone already set one up for you? Just ask:
 
-> Publish this page as `finance`.
+> Connect shhtml to https://publish.example.com and https://static.example.com, then sign me in.
 
-and you get back `https://static.<domain>/finance`. Re-publishing to the same name
-replaces it in place.
+## Use it
 
-### Advanced: run `shh` directly from your terminal
+> Publish this page as finance.
+>
+> Put the ./build folder online as q3-report.
+>
+> Give me a link to this dashboard that I can drop in Slack.
 
-Everything above works by asking Claude Code, which runs the bundled `shh` CLI for
-you. If you'd rather run `shh` yourself as a plain terminal command, symlink it onto
-your PATH once:
+The first time, a browser tab opens and you sign in by email. After that, publishing is just an upload. If a name is already taken, your agent asks before it replaces the page.
+
+## Who can see a page
+
+Two Cloudflare Access apps decide. Change them in the Zero Trust dashboard.
+
+| App | Guards | Decides |
+| --- | --- | --- |
+| shhtml publisher | `publish.example.com/auth` | who can publish |
+| shhtml viewer | `static.example.com` | who can view |
+
+Both start with the emails you gave at setup. To make one page public, add an Access app for `static.example.com/that-page` with a Bypass rule for Everyone.
+
+<details>
+<summary><b>How it works</b></summary>
+<br>
+
+```text
+viewing                           publishing
+-------                           ----------
+browser                           your agent runs the shh CLI
+   |                                 |
+static.yourdomain.com             publish.yourdomain.com
+   |                                 |
+Cloudflare Access                 /auth sits behind Cloudflare Access
+(who may view)                    and hands out a 30-day upload token
+   |                                 |
+Worker serves files from R2  <--  Worker writes files to R2
+```
+
+Files live in an R2 bucket. One small Worker reads and writes them. Cloudflare Access handles every sign-in.
+
+</details>
+
+<details>
+<summary><b>Security</b></summary>
+<br>
+
+- Uploads need a signed token. You get one only by signing in through Cloudflare Access, and it lasts 30 days.
+- The signing secret lives in Cloudflare's secret store, never in code.
+- Upload paths are checked: no `..` and no hidden files.
+- Cloudflare checks every viewer before the Worker runs. If the Worker fails, no page leaks.
+- Pages go out with no-sniff, no-framing, and strict referrer headers.
+
+shhtml is a private shelf for pages, not a vault. Don't use it for secrets, personal data, or anything regulated.
+
+</details>
+
+<details>
+<summary><b>Run the <code>shh</code> command yourself</b></summary>
+<br>
+
+Your agent runs a small CLI for you. To run it by hand, clone the repo and link the CLI into a folder on your PATH:
 
 ```
-ln -s "$(find ~/.claude/plugins -path '*shhtml*/skills/shh/scripts/shh' | head -1)" /usr/local/bin/shh
+git clone https://github.com/latecommitlab/shhtml
+ln -s "$PWD/shhtml/plugin/skills/shh/scripts/shh" ~/.local/bin/shh
 ```
 
-Then the CLI is: `shh init <publish-url> <static-url>`, `shh login`,
-`shh publish <name> <files…>`, `shh whoami`.
+| Command | Does |
+| --- | --- |
+| `shh init <publish-url> <static-url>` | points this machine at an instance |
+| `shh login` | signs you in |
+| `shh publish <name> <files…>` or `--dir <folder>` | publishes |
+| `shh whoami` | shows who is signed in |
 
-## Host your own instance
+It needs only bash, curl, and python3.
 
-One-time, about ten minutes, on your own Cloudflare account. You need a domain
-on Cloudflare, a free Zero Trust organization (two clicks at
-one.dash.cloudflare.com), node 18+, and an API token with these permissions:
-Workers Scripts, Workers R2 Storage, Access: Apps and Policies, DNS, Workers
-Routes.
+</details>
 
-Run `/shh-setup` in Claude Code and it walks through everything. Under the
-hood it runs the provisioner, which is idempotent and safe to re-run:
+<details>
+<summary><b>Set up by hand</b></summary>
+<br>
+
+The setup skill runs these for you. From a clone of this repo:
 
 ```
 CLOUDFLARE_API_TOKEN=... plugin/skills/shh-setup/scripts/provision \
@@ -129,52 +165,26 @@ npx -y wrangler@4 deploy
 openssl rand -hex 32 | npx -y wrangler@4 secret put SIGNING_SECRET
 ```
 
-That creates the R2 bucket, both DNS records, both Access applications, writes
-`wrangler.toml`, and deploys. `wrangler.toml` is gitignored because it holds
-your account and domain; the repo stays generic.
+The provisioner is safe to run again. It creates the R2 bucket, both DNS records, and both Access apps, then writes `worker/wrangler.toml`. That file holds your account and domain, so git ignores it. Keep this clone, because later deploys need that file.
 
-## Who can see what
+</details>
 
-Two Access applications control everything, both managed in the Zero Trust
-dashboard:
-
-- **publisher** guards `publish.example.com/auth`: who can publish
-- **viewer** guards `static.example.com`: who can view
-
-Both start with the emails you gave setup. Change either list any time in the
-dashboard. To make one page public, add an Access application for
-`static.example.com/that-page` with a Bypass policy for Everyone; more
-specific paths win.
-
-## Security model
-
-- Writes require an HMAC-SHA256 token minted only after a Cloudflare Access
-  login. The signing secret lives in Cloudflare's secret store, not in code.
-- Every write endpoint is authenticated, including the collision check.
-- Upload paths are validated. No traversal, no dotfiles. The publish marker is
-  written server-side, so clients cannot forge it.
-- The auth callback only redirects to loopback addresses.
-- Served pages get nosniff, deny-framing, and strict referrer headers. HTML is
-  never cached, so a republish shows up on the next view.
-- Tokens expire after 30 days and carry the publisher's email; every upload is
-  tagged with who did it.
-- Viewing is enforced at Cloudflare's edge before the worker runs. Losing the
-  worker cannot expose a page.
-
-What this is not for: secrets, PII, or anything regulated. It is a private
-shelf for pages, not a vault.
-
-## Development
+## Develop
 
 ```
-cd worker && npm test                      # unit tests: token, Access JWT, key rules
+cd worker && npm test                      # worker tests
 plugin/skills/shh/scripts/shh selftest     # CLI checks
 ```
 
-The worker is plain modules with the logic kept pure so the tests run on
-node's built-in runner, no framework. Each directory has a CLAUDE.md
-explaining how it fits together, for humans and for Claude.
+## Star history
+
+<a href="https://www.star-history.com/#latecommitlab/shhtml&Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=latecommitlab/shhtml&type=Date&theme=dark">
+    <img alt="Star history for latecommitlab/shhtml" src="https://api.star-history.com/svg?repos=latecommitlab/shhtml&type=Date" width="600">
+  </picture>
+</a>
 
 ## License
 
-MIT
+[MIT](./LICENSE)

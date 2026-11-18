@@ -1,0 +1,3 @@
+# Codex: setup creates real cloud resources, so only the user may start it.
+policy:
+  allow_implicit_invocation: false

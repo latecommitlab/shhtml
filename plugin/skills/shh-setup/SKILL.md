@@ -24,14 +24,16 @@ Run this once per Cloudflare account. Everything it creates fits in Cloudflare's
 
 - `node` 18+ available (`node --version`); wrangler runs via `npx`
 - A Zero Trust organization exists on the account (one-time, free, at one.dash.cloudflare.com; the provision script tells you if it is missing)
-- The shhtml worker source. When this plugin was installed from the git marketplace, it is at `${CLAUDE_PLUGIN_ROOT}/../worker`. Otherwise clone the repo and use its `worker/` directory.
+- The worker source: the `worker/` folder of a copy of https://github.com/latecommitlab/shhtml. If the user has none, clone it somewhere they will keep. The provisioner writes their instance settings to `worker/wrangler.toml` in that copy, and every later deploy needs that file.
 
 ## Steps
+
+Paths below are relative to this skill's folder. Run them by their full paths.
 
 1. Run the provisioner (idempotent; re-running is safe):
 
 ```bash
-${CLAUDE_PLUGIN_ROOT}/skills/shh-setup/scripts/provision \
+scripts/provision \
   --zone example.com \
   --publish-host publish.example.com \
   --static-host static.example.com \
@@ -57,15 +59,15 @@ openssl rand -hex 32 | npx -y wrangler@4 secret put SIGNING_SECRET
 3. Point the CLI at the new instance and sign in:
 
 ```bash
-${CLAUDE_PLUGIN_ROOT}/skills/shh/scripts/shh init https://publish.example.com https://static.example.com
-${CLAUDE_PLUGIN_ROOT}/skills/shh/scripts/shh login
+../shh/scripts/shh init https://publish.example.com https://static.example.com
+../shh/scripts/shh login
 ```
 
 4. Verify before declaring success:
 
 - `curl -s -o /dev/null -w '%{http_code}' https://static.example.com/x` returns 302 (Access login wall)
 - `curl -s -o /dev/null -w '%{http_code}' -X PUT https://publish.example.com/upload/x` returns 401 (writes need a token)
-- `shh whoami` prints the signed-in email
+- `../shh/scripts/shh whoami` prints the signed-in email
 - publish a test page and open it in the browser
 
 ## Changing who can see what

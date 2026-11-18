@@ -1,13 +1,15 @@
 # shhtml
 
 Private-by-default static publishing on the user's own Cloudflare account,
-packaged as a Claude Code plugin. Read README.md first; this file is for
+packaged as a plugin for Claude Code and Codex. Read README.md first; this file is for
 working on the repo.
 
 ## Map
 
-- `.claude-plugin/marketplace.json` marketplace manifest; `/plugin marketplace add <owner>/shhtml` reads this
-- `plugin/` the Claude Code plugin (skills + CLI + provisioner)
+- `.claude-plugin/marketplace.json` marketplace manifest; Claude Code (`/plugin marketplace add`) and
+  Codex (`codex plugin marketplace add`) both read it
+- `.github/readme/` the images the README shows
+- `plugin/` the plugin (skills + CLI + provisioner), the same folder for both agents
 - `worker/` the Cloudflare Worker that is the entire backend
 
 ## Invariants (do not break these)

@@ -10,17 +10,13 @@ allowed-tools:
 
 # shh: publish a static page
 
-The CLI does the work:
-
-```
-${CLAUDE_PLUGIN_ROOT}/skills/shh/scripts/shh
-```
+The CLI does the work. It is `scripts/shh` in this skill's folder. Run it by its full path; `scripts/shh` below always means that file.
 
 ## First, which kind of ask is this?
 
 Three kinds reach this skill and only one of them is a publish. Answer the other two directly instead of steering them into the publish flow:
 
-- **Stand up an instance** — "provision shhtml on my Cloudflare for example.com". This skill does not provision; `/shh-setup` does, and it is user-invoked on purpose because it creates real cloud resources. Point them there. If they already have an instance and this machine just doesn't know about it, `shh init <publish_url> <static_url>` is the fix.
+- **Stand up an instance** — "provision shhtml on my Cloudflare for example.com". This skill does not provision; the shh-setup skill does. Only the user can start it, on purpose, because it creates real cloud resources. Point them there. If they already have an instance and this machine just doesn't know about it, `scripts/shh init <publish_url> <static_url>` is the fix.
 - **Change who can view** — "add rob@example.com so he can see the finance page". There is no CLI command for this. Viewing is enforced by Cloudflare Access before the worker ever runs, so it is dashboard work: Zero Trust → Access → Applications → the viewer application on the static hostname → edit its policy. To make a single path public instead, add an application for `<static host>/<path>` with a Bypass policy for Everyone; more specific paths win. Say plainly that you can't do it from here.
 - **Publish or replace a page** — everything below.
 
@@ -50,13 +46,13 @@ Three kinds reach this skill and only one of them is a publish. Answer the other
 
 ```bash
 # single page — name it index.html so the short URL resolves
-${CLAUDE_PLUGIN_ROOT}/skills/shh/scripts/shh publish finance index.html
+scripts/shh publish finance index.html
 
 # page plus assets that sit beside it
-${CLAUDE_PLUGIN_ROOT}/skills/shh/scripts/shh publish finance index.html app.css chart.js
+scripts/shh publish finance index.html app.css chart.js
 
 # whole directory, structure preserved
-${CLAUDE_PLUGIN_ROOT}/skills/shh/scripts/shh publish finance --dir ./build
+scripts/shh publish finance --dir ./build
 ```
 
 Behavior worth knowing:

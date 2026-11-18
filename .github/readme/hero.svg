@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="496" viewBox="0 0 960 496" role="img" aria-label="You ask your agent to publish a page. It replies with a link on your domain. Visitors see a Cloudflare sign-in before the page.">
+  <defs>
+    <filter id="lift" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#000" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+  <style>
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size: 16px; }
+    .sans { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+  </style>
+
+  <!-- the agent -->
+  <g filter="url(#lift)">
+    <rect x="10" y="10" width="640" height="404" rx="14" fill="#0d1117" stroke="#30363d"/>
+    <path d="M24 10h612a14 14 0 0 1 14 14v26H10V24a14 14 0 0 1 14-14z" fill="#161b22"/>
+    <circle cx="36" cy="30" r="6" fill="#ff5f57"/><circle cx="56" cy="30" r="6" fill="#febc2e"/><circle cx="76" cy="30" r="6" fill="#28c840"/>
+    <text x="330" y="35" text-anchor="middle" class="sans" font-size="13" fill="#8b949e">Claude Code or Codex · ~/reports</text>
+  </g>
+  <g class="mono">
+    <text x="40" y="96" fill="#f6821f">›</text><text x="62" y="96" fill="#e6edf3">publish this page as finance</text>
+    <text x="40" y="146" fill="#6e7681">●</text><text x="62" y="146" fill="#8b949e">Checked index.html: no outside calls, no keys.</text>
+    <text x="40" y="176" fill="#6e7681">●</text><text x="62" y="176" fill="#8b949e">Uploaded 3 files to finance/</text>
+    <text x="40" y="226" fill="#3fb950">✓</text><text x="62" y="226" fill="#e6edf3">Live at <tspan fill="#58a6ff">https://static.yourdomain.com/finance</tspan></text>
+    <text x="62" y="256" fill="#8b949e">Only people on your list can open it.</text>
+    <text x="40" y="306" fill="#f6821f">›</text>
+    <rect x="62" y="292" width="10" height="18" fill="#e6edf3" opacity="0.85">
+      <animate attributeName="opacity" values="0.85;0;0.85" dur="1.1s" repeatCount="indefinite"/>
+    </rect>
+  </g>
+
+  <!-- what a visitor sees -->
+  <g filter="url(#lift)">
+    <rect x="520" y="196" width="420" height="290" rx="12" fill="#ffffff" stroke="#d0d7de"/>
+    <path d="M532 196h396a12 12 0 0 1 12 12v26H520v-26a12 12 0 0 1 12-12z" fill="#f6f8fa"/>
+    <circle cx="540" cy="216" r="5" fill="#d0d7de"/><circle cx="556" cy="216" r="5" fill="#d0d7de"/><circle cx="572" cy="216" r="5" fill="#d0d7de"/>
+    <rect x="594" y="205" width="300" height="22" rx="11" fill="#ffffff" stroke="#d0d7de"/>
+    <path d="M608 214v-3a4 4 0 0 1 8 0v3" fill="none" stroke="#57606a" stroke-width="1.6"/>
+    <rect x="606" y="213.5" width="12" height="9" rx="2" fill="#57606a"/>
+    <text x="626" y="221" class="sans" font-size="12" fill="#57606a">static.yourdomain.com/finance</text>
+  </g>
+  <g class="sans">
+    <circle cx="730" cy="282" r="22" fill="#fff4ea"/>
+    <path d="M724 281v-5a6 6 0 0 1 12 0v5" fill="none" stroke="#f6821f" stroke-width="2.4"/>
+    <rect x="721" y="280" width="18" height="13" rx="3" fill="#f6821f"/>
+    <text x="730" y="332" text-anchor="middle" font-size="17" font-weight="600" fill="#1f2328">static.yourdomain.com</text>
+    <text x="730" y="354" text-anchor="middle" font-size="13" fill="#656d76">Get a login code emailed to you</text>
+    <rect x="590" y="372" width="280" height="36" rx="8" fill="#ffffff" stroke="#d0d7de"/>
+    <text x="604" y="395" font-size="14" fill="#8c959f">you@company.com</text>
+    <rect x="590" y="418" width="280" height="38" rx="8" fill="#f6821f"/>
+    <text x="730" y="442" text-anchor="middle" font-size="14" font-weight="600" fill="#ffffff">Send me a code</text>
+  </g>
+</svg>

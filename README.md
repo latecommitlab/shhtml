@@ -41,14 +41,14 @@ not paste both into one prompt.
 **Step 1 — add the marketplace:**
 
 ```
-/plugin marketplace add MechanicMishap/shhtml
+/plugin marketplace add latecommitlab/shhtml
 ```
 
 If Claude Code opens an "Add Marketplace" box asking for the source, type only the
 repo shorthand there (nothing after it):
 
 ```
-MechanicMishap/shhtml
+latecommitlab/shhtml
 ```
 
 **Step 2 — install the plugin** (after step 1 finishes):

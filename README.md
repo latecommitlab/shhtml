@@ -90,6 +90,29 @@ Two Cloudflare Access apps decide. Change them in the Zero Trust dashboard.
 Both start with the emails you gave at setup. To make one page public, add an Access app for `static.example.com/that-page` with a Bypass rule for Everyone.
 
 <details>
+<summary><b>Update</b></summary>
+<br>
+
+shhtml updates straight from this repo. There are no versions to pick.
+
+**Claude Code:** turn on auto-update once. Open `/plugin`, go to Marketplaces, pick shhtml, and choose **Enable auto-update**. Or update by hand:
+
+```
+claude plugin marketplace update shhtml
+claude plugin update shhtml@shhtml
+```
+
+**Codex:**
+
+```
+codex plugin marketplace upgrade shhtml
+```
+
+**Your instance:** when a [release](https://github.com/latecommitlab/shhtml/releases) says the worker changed, run setup again and ask it to update your instance. It pulls the new code and redeploys. Your settings and sign-ins stay.
+
+</details>
+
+<details>
 <summary><b>How it works</b></summary>
 <br>
 

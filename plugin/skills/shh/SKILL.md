@@ -14,10 +14,11 @@ The CLI does the work. It is `scripts/shh` in this skill's folder. Run it by its
 
 ## First, which kind of ask is this?
 
-Three kinds reach this skill and only one of them is a publish. Answer the other two directly instead of steering them into the publish flow:
+Four kinds reach this skill and only one of them is a publish. Answer the other three directly instead of steering them into the publish flow:
 
 - **Stand up an instance** — "provision shhtml on my Cloudflare for example.com". This skill does not provision; the shh-setup skill does. Only the user can start it, on purpose, because it creates real cloud resources. Point them there. If they already have an instance and this machine just doesn't know about it, `scripts/shh init <publish_url> <static_url>` is the fix.
 - **Change who can view** — "add rob@example.com so he can see the finance page". There is no CLI command for this. Viewing is enforced by Cloudflare Access before the worker ever runs, so it is dashboard work: Zero Trust → Access → Applications → the viewer application on the static hostname → edit its policy. To make a single path public instead, add an application for `<static host>/<path>` with a Bypass policy for Everyone; more specific paths win. Say plainly that you can't do it from here.
+- **Update shhtml** — the skills and this CLI update with the plugin: in Claude Code, `claude plugin marketplace update shhtml` then `claude plugin update shhtml@shhtml`; in Codex, `codex plugin marketplace upgrade shhtml`. The worker on their Cloudflare only changes when they redeploy it, which the shh-setup skill covers.
 - **Publish or replace a page** — everything below.
 
 ## Before publishing

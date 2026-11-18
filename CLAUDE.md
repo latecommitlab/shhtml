@@ -29,7 +29,13 @@ working on the repo.
 ## Versioning
 
 `plugin.json` deliberately has no `version` field: Claude Code then uses the
-git commit SHA, so `/plugin update` picks up every push. If this ever moves to
+git commit SHA, so `/plugin update` picks up every push. Codex's
+`codex plugin marketplace upgrade` also pulls the latest `main`.
+
+The worker is different: it runs on each owner's Cloudflare account and only
+changes when they redeploy. When a change touches `worker/`, publish a GitHub
+Release that says owners must redeploy, so people watching releases hear about
+it. If this ever moves to
 a stable release cycle, add semver plus a CHANGELOG and bump on each release.
 
 ## Testing

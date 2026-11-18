@@ -1,6 +1,6 @@
 ---
 name: shh-setup
-description: Provision a new shhtml instance on the user's own Cloudflare account — R2 bucket, DNS records, and Cloudflare Access applications — then walk the user through deploying the worker and point the CLI at it. One-time setup. Use when the user wants to set up, provision, or host their own shhtml, or connect shhtml to their domain. Publishing to an instance that already exists is the shh skill's job, not this one.
+description: Provision a new shhtml instance on the user's own Cloudflare account — R2 bucket, DNS records, and Cloudflare Access applications — then walk the user through deploying the worker and point the CLI at it. One-time setup. Use when the user wants to set up, provision, or host their own shhtml, connect shhtml to their domain, or update their instance to the latest worker. Publishing to an instance that already exists is the shh skill's job, not this one.
 disable-model-invocation: true
 allowed-tools:
   - Bash
@@ -69,6 +69,18 @@ openssl rand -hex 32 | npx -y wrangler@4 secret put SIGNING_SECRET
 - `curl -s -o /dev/null -w '%{http_code}' -X PUT https://publish.example.com/upload/x` returns 401 (writes need a token)
 - `../shh/scripts/shh whoami` prints the signed-in email
 - publish a test page and open it in the browser
+
+## Updating an instance
+
+A plugin update brings new skills and a new CLI, but the worker runs on the user's Cloudflare account and only changes when they redeploy it. In the copy of the repo that holds their `worker/wrangler.toml`:
+
+```bash
+git pull
+cd worker
+npx -y wrangler@4 deploy
+```
+
+`wrangler.toml` is gitignored and the signing secret lives in Cloudflare, so the pull keeps both, and nobody has to sign in again. Run the step 4 checks afterwards.
 
 ## Changing who can see what
 
